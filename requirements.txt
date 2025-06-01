@@ -7,3 +7,5 @@ pydantic
 sqlalchemy
 requests
 python-decouple
+psycopg[binary]
+# psycopg2-binary

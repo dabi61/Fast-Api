@@ -1,7 +1,12 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
+from sqlmodel import Session, select
+from api.db.session import get_session
 import os
-from .schemas import (
-    EventSchema,
+
+
+
+from .model import (
+    EventModel,
     EventListScheme,
     EventCreateSchema,
     EventUploadSchema,
@@ -10,33 +15,58 @@ router = APIRouter()
 from api.db.config import DATABASE_URL
 # GET DATA HERE
 #List View
-@router.get("/")
-def read_events() -> EventListScheme:
-    print(os.environ.get("DATABASE_URL"), DATABASE_URL)
+@router.get("/", response_model=EventListScheme)
+def read_events(session: Session = Depends(get_session)):
+    query = select(EventModel)
+    results = session.exec(query).all()
     return {
-        "results": [
-            {"id": 1}, {"id": 3}, {"id": 2, }
-        ],
-        "count": 3
+        "results": results,
+        "count": len(results)
     }
 
 # SEND DATA HERE
 # Create View
 # POST /api/events
-@router.post("/")
-def create_event(payload: EventCreateSchema) -> EventSchema:
+@router.post("/", response_model=EventModel)
+def create_event(
+    payload: EventCreateSchema,
+    session: Session = Depends(get_session)):
     data = payload.model_dump() #payload -> dict -> pydantic
-    return {"id": 123, **data}
+    obj = EventModel.model_validate(data)
+    session.add(obj)
+    session.commit()
+    session.refresh(obj)
+    return obj
 
 
-@router.get("/{event_id}")
-def get_event(event_id: int) -> EventSchema:
+@router.get("/{event_id}", response_model=EventModel)
+def get_event(event_id: int, session: Session = Depends(get_session)):
+    query = select(EventModel).where(EventModel.id == event_id)
+    results = session.exec(query).first()
+    if not results:
+        raise HTTPException(status_code=404, detail="Event Not Found")
     # a single row
-    return {"id": event_id}
+    return results
 
 
-@router.put("/{event_id}")
-def update_event(event_id: int, payload: EventUploadSchema) -> EventSchema:
-    # a single row
-    print(payload.descriptions)
-    return {"id": event_id}
+@router.put("/{event_id}", response_model=EventModel)
+def update_event(
+    event_id: int,
+    payload: EventUploadSchema,
+    session: Session = Depends(get_session)):
+    query = select(EventModel).where(EventModel.id == event_id)
+    obj = session.exec(query).first()
+    if not obj:
+        raise HTTPException(status_code=404, detail="Event Not Found")
+
+    data = payload.model_dump()
+    for k, v in data.items():
+        # if k == 'id':  #Mo len de tranh cap nhat field id Nhung minh thiet ke payload kia thi khong can thiet
+        #     continue
+        setattr(obj, k, v)
+
+    session.add(obj)
+    session.commit()
+    session.refresh(obj)
+    return obj
+
