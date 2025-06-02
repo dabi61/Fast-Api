@@ -16,4 +16,4 @@
       "restartPolicyType": "always",
       "restartPolicyMaxRetries": 10
     }
-}.
+}
