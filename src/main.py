@@ -31,5 +31,5 @@ def read_root():
 
 
 @app.get("/healthz")
-def read_api_health():
-    return {"Status", "ok"}
+def health_check():
+    return {"status": "ok"}
