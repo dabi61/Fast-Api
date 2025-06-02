@@ -27,3 +27,8 @@ app.include_router(event_router, prefix='/api/events') #/api/events
 @app.get("/")
 def read_root():
     return {"message": "Hello, world!"}
+
+
+@app.get("/healthz")
+def read_api_health():
+    return {"Status", "ok"}
