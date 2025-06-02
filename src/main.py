@@ -14,12 +14,13 @@ async def lifespan( app:FastAPI):
     #clean up
 
 app = FastAPI(lifespan=lifespan)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_orgins=["*"],
+    allow_origins=["*"],  # <- sửa lại đúng chính tả
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"]
+    allow_headers=["*"],
 )
 app.include_router(event_router, prefix='/api/events') #/api/events
 
